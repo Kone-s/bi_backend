@@ -40,6 +40,16 @@ public class User implements Serializable {
     private String userAvatar;
 
     /**
+     * 用户简介
+     */
+    private String userProfile;
+
+    /**
+     * 用户电话
+     */
+    private String userPhone;
+
+    /**
      * 用户角色：user/admin
      */
     private String userRole;

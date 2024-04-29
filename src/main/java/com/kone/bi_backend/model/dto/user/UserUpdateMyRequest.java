@@ -17,10 +17,14 @@ public class UserUpdateMyRequest implements Serializable {
     private String nickname;
 
     /**
-     * 用户头像
+     * 用户简介
      */
-    private String userAvatar;
+    private String userProfile;
 
+    /**
+     * 用户电话
+     */
+    private String userPhone;
 
     @TableField(exist = false)
     private static final long serialVersionUID = 1L;

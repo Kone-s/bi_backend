@@ -27,6 +27,18 @@ public interface UserService extends IService<User> {
      */
     long userRegister(String nickname, String userEmail, String userPassword, String checkPassword, String captcha);
 
+
+    /**
+     * 忘记密码
+     *
+     * @param userEmail     邮箱
+     * @param userPassword  用户密码
+     * @param checkPassword 校验密码
+     * @param captcha       验证码
+     * @return 是否更新成功
+     */
+    boolean userForget(String userEmail, String userPassword, String checkPassword, String captcha);
+
     /**
      * 用户登录
      *
@@ -46,7 +58,7 @@ public interface UserService extends IService<User> {
     User getLoginUser(HttpServletRequest request);
 
     /**
-     * 获取当前登录用户（允许未登录）
+     * 获取当前登录用户
      *
      * @param request
      * @return
@@ -55,11 +67,18 @@ public interface UserService extends IService<User> {
 
 
     /**
-     * 获取校验码
+     * 获取注册校验码
      *
      * @param userEmail
      */
-    boolean sendCaptcha(String userEmail);
+    boolean sendRegisterCaptcha(String userEmail);
+
+    /**
+     * 获取忘记密码校验码
+     *
+     * @param userEmail
+     */
+    boolean sendForgetCaptcha(String userEmail);
 
     /**
      * 用户注销

@@ -1,0 +1,12 @@
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: #
+    password: #
+    url: jdbc:mysql://47.109.191.16:3306/bi
+  # Redis 配置
+  redis:
+    database: 0
+    host: 47.109.191.16
+    port: 6379
+    timeout: 5000

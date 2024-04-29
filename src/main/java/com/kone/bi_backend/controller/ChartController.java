@@ -304,8 +304,6 @@ public class ChartController {
         }
         userInput.append(userGoal).append("\n");
         userInput.append("原始数据：").append("\n");
-        // 压缩后的数据
-        //String csvData = ExcelUtils.XlsxToCsv(multipartFile);
 
         String csvData = ""; // 在 switch 外部定义
 
@@ -440,6 +438,4 @@ public class ChartController {
                 sortField);
         return queryWrapper;
     }
-
-
 }

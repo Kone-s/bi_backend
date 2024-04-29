@@ -71,22 +71,23 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (!userPassword.equals(checkPassword)) {
             throw new CustomizeException(ErrorCode.PARAMS_ERROR, "两次输入的密码不一致");
         }
-
-        // 从redis获取到验证码进行校验
-        ValueOperations<String, String> redisOperations = redisTemplate.opsForValue();
-        String redisKey = "BI:" + userEmail;
-        String redisCaptcha = redisOperations.get(redisKey);
-        if (captcha == null || !captcha.equals(redisCaptcha)) {
-            throw new CustomizeException(ErrorCode.PARAMS_ERROR, "验证码错误");
-        }
         synchronized (userEmail.intern()) {
             // 账户不能重复
             QueryWrapper<User> queryWrapper = new QueryWrapper<>();
             queryWrapper.eq("user_email", userEmail);
             long count = this.baseMapper.selectCount(queryWrapper);
             if (count > 0) {
-                throw new CustomizeException(ErrorCode.PARAMS_ERROR, "已注册，如忘记密码请找回");
+                throw new CustomizeException(ErrorCode.PARAMS_ERROR, "已注册，如忘记密码请找回！");
             }
+
+            // 从redis获取到验证码进行校验
+            ValueOperations<String, String> redisOperations = redisTemplate.opsForValue();
+            String redisKey = "RegisterCaptcha:" + userEmail;
+            String redisCaptcha = redisOperations.get(redisKey);
+            if (captcha == null || !captcha.equals(redisCaptcha)) {
+                throw new CustomizeException(ErrorCode.PARAMS_ERROR, "验证码错误");
+            }
+
             // 2. 加密
             String encryptPassword = DigestUtils.md5DigestAsHex((CommonConstant.SALT + userPassword).getBytes());
             // 3. 插入数据
@@ -107,6 +108,49 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             boolean scoreResult = scoreService.save(score);
             ThrowUtils.throwIf(!scoreResult, ErrorCode.OPERATION_ERROR, "注册积分异常");
             return user.getId();
+        }
+    }
+
+    @Override
+    public boolean userForget(String userEmail, String userPassword, String checkPassword, String captcha) {
+        // 1. 校验
+        Pattern pattern = Pattern.compile("^[a-zA-Z0-9_.-]+@[a-zA-Z0-9-]+(\\.[a-zA-Z0-9-]+)*\\.[a-zA-Z0-9]{2,6}$");
+        Matcher matcher = pattern.matcher(userEmail);
+        if (!matcher.find()) {
+            throw new CustomizeException(ErrorCode.PARAMS_ERROR, "邮箱格式错误");
+        }
+        if (userPassword.length() < 8 || checkPassword.length() < 8) {
+            throw new CustomizeException(ErrorCode.PARAMS_ERROR, "用户密码过短");
+        }
+        // 密码和校验密码相同
+        if (!userPassword.equals(checkPassword)) {
+            throw new CustomizeException(ErrorCode.PARAMS_ERROR, "两次输入的密码不一致");
+        }
+        synchronized (userEmail.intern()) {
+            // 从redis获取到验证码进行校验
+            ValueOperations<String, String> redisOperations = redisTemplate.opsForValue();
+            String redisKey = "ForgetCaptcha:" + userEmail;
+            String redisCaptcha = redisOperations.get(redisKey);
+            if (captcha == null || !captcha.equals(redisCaptcha)) {
+                throw new CustomizeException(ErrorCode.PARAMS_ERROR, "验证码错误");
+            }
+            // 2. 加密
+            String encryptPassword = DigestUtils.md5DigestAsHex((CommonConstant.SALT + userPassword).getBytes());
+            // 3. 更新数据
+            User user = new User();
+            user.setUserPassword(encryptPassword); // 设置新的加密密码
+
+            UpdateWrapper<User> updateWrapper = new UpdateWrapper<>();
+            updateWrapper.set("user_password", encryptPassword) // 设置要更新的字段和值
+                    .eq("user_email", userEmail); // 添加更新条件
+
+            // 调用update方法更新用户密码
+            boolean updateResult = this.update(user, updateWrapper); // 注意这里传递了两个参数
+            if (!updateResult) {
+                throw new CustomizeException(ErrorCode.SYSTEM_ERROR, "修改密码失败，数据库错误");
+            }
+            return true;
+
         }
     }
 
@@ -164,7 +208,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     /**
-     * 获取当前登录用户（允许未登录）
+     * 获取当前登录用户
      *
      * @param request
      * @return
@@ -199,7 +243,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     @Override
-    public boolean sendCaptcha(String userEmail) {
+    public boolean sendRegisterCaptcha(String userEmail) {
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("user_email", userEmail);
         long count = this.baseMapper.selectCount(queryWrapper);
@@ -210,13 +254,29 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         try {
             long timeOut = 1000 * 60 * 5;
             ValueOperations<String, String> redisOperations = redisTemplate.opsForValue();
-            String redisKey = "BI:" + userEmail;
+            String redisKey = "RegisterCaptcha:" + userEmail;
             redisOperations.set(redisKey, captcha, timeOut, TimeUnit.MILLISECONDS);
         } catch (Exception e) {
             throw new CustomizeException(ErrorCode.SYSTEM_ERROR, "缓存失败");
         }
         //发送验证码
-        emailServer.sendEmailCaptcha(userEmail, captcha);
+        emailServer.sendRegisterEmailCaptcha(userEmail, captcha);
+        return true;
+    }
+
+    @Override
+    public boolean sendForgetCaptcha(String userEmail) {
+        String captcha = CaptchaGenerateUtil.generateVerCode();
+        try {
+            long timeOut = 1000 * 60 * 5;
+            ValueOperations<String, String> redisOperations = redisTemplate.opsForValue();
+            String redisKey = "ForgetCaptcha:" + userEmail;
+            redisOperations.set(redisKey, captcha, timeOut, TimeUnit.MILLISECONDS);
+        } catch (Exception e) {
+            throw new CustomizeException(ErrorCode.SYSTEM_ERROR, "缓存失败");
+        }
+        //发送验证码
+        emailServer.sendForgetEmailCaptcha(userEmail, captcha);
         return true;
     }
 
@@ -262,8 +322,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         queryWrapper.eq(id != null, "id", id);
         queryWrapper.eq(StringUtils.isNotBlank(userRole), "user_role", userRole);
         queryWrapper.like(StringUtils.isNotBlank(nickname), "nickname", nickname);
-        queryWrapper.orderBy(SqlUtils.validSortField(sortField), sortOrder.equals(CommonConstant.SORT_ORDER_ASC),
-                sortField);
+        queryWrapper.orderBy(SqlUtils.validSortField(sortField), sortOrder.equals(CommonConstant.SORT_ORDER_ASC), sortField);
         return queryWrapper;
     }
 }
