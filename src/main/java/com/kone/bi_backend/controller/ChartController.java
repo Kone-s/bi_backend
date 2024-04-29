@@ -76,7 +76,7 @@ public class ChartController {
     /**
      * 删除
      *
-     * @param chartDeleteRequest 删除图表请求参数
+     * @param chartDeleteRequest 删除图表请求类
      * @param request            请求
      * @return 成功信息
      */
@@ -101,8 +101,8 @@ public class ChartController {
     /**
      * 更新图标信息
      *
-     * @param chartUpdateRequest
-     * @param request
+     * @param chartUpdateRequest 图标更新实体类
+     * @param request            更新请求
      * @return
      */
     @PostMapping("/update/gen")
@@ -408,6 +408,98 @@ public class ChartController {
         updateChartResult.setId(chartId);
         updateChartResult.setChartStatus("failed");
         updateChartResult.setExecMessage(execMessage);
+    }
+
+
+    /**
+     * 重新生成图表请求
+     *
+     * @param chartId 图表id
+     * @param request 请求
+     * @return
+     */
+    @GetMapping("/reload/gen")
+    public BaseResponse<BiResponseVO> reloadChartByAi(long chartId, HttpServletRequest request) {
+        ThrowUtils.throwIf(chartId < 0, ErrorCode.PARAMS_ERROR);
+
+        User loginUser = userService.getLoginUser(request);
+        // 限流判断，每个用户一个限流器
+        redisLimiterServer.doRateLimit("genChartByAi_" + loginUser.getId());
+
+        Chart byId = chartService.getById(chartId);
+        String chartType = byId.getChartType();
+        String chartGoal = byId.getGoal();
+        String chartData = byId.getChartData();
+
+        // 构造用户输入
+        StringBuilder userInput = new StringBuilder();
+        userInput.append("分析需求：").append("\n");
+
+        // 拼接分析目标
+        String userGoal = chartGoal;
+        if (StringUtils.isNotBlank(chartType)) {
+            userGoal += "，请使用" + chartType;
+        }
+
+        userInput.append(userGoal).append("\n");
+        userInput.append("原始数据：").append("\n");
+
+        userInput.append(chartData).append("\n");
+
+        CompletableFuture.runAsync(() -> {
+            // 先修改图表任务状态为 “执行中”。等执行成功后，修改为 “已完成”、保存执行结果；执行失败后，状态修改为 “失败”，记录任务失败信息。
+            Chart updateChart = new Chart();
+            updateChart.setId(chartId);
+            updateChart.setChartStatus("running");
+            boolean b = chartService.updateById(updateChart);
+            if (!b) {
+                handleChartUpdateError(chartId, "更新图表执行中状态失败");
+                return;
+            }
+
+            HashMap<String, Object> result = sparkAIServer.sendMesToAI(userInput.toString());
+            String chatResult = result.get("chatResult").toString();
+            Integer totalTokensInteger = (Integer) result.get("totalTokens");
+            long totalTokens = totalTokensInteger.longValue(); // 将 Integer 转换为 Long
+
+            scoreService.deductScore(loginUser.getId(), 1L);
+            scoreService.depleteTokens(loginUser.getId(), totalTokens);
+
+            webSocketServer.sendToAllClient("图表生成好啦，快去看看吧！");
+            // 匹配{}内的内容
+            Pattern pattern = Pattern.compile("\\{(.*)}", Pattern.DOTALL);
+            Matcher matcher = pattern.matcher(chatResult);
+            String genChart;
+            String genResult;
+            if (matcher.find()) {
+                genChart = (matcher.group());
+            } else {
+                handleChartUpdateError(chartId, "AI 生成错误");
+                return;
+            }
+            // 匹配结论后面的内容
+            pattern = Pattern.compile("结论：(.*)");
+            matcher = pattern.matcher(chatResult);
+            if (matcher.find()) {
+                genResult = matcher.group(1);
+            } else {
+                handleChartUpdateError(chartId, "AI 生成错误");
+                return;
+            }
+            Chart updateChartResult = new Chart();
+            updateChartResult.setId(chartId);
+            updateChartResult.setGenChart(genChart);
+            updateChartResult.setGenResult(genResult);
+            updateChartResult.setChartStatus("succeed");
+            boolean updateResult = chartService.updateById(updateChartResult);
+            if (!updateResult) {
+                handleChartUpdateError(chartId, "更新图表成功状态失败");
+            }
+        }, threadPoolExecutor);
+
+        BiResponseVO biResponseVO = new BiResponseVO();
+        biResponseVO.setChartId(chartId);
+        return ResultUtils.success(biResponseVO);
     }
 
 
