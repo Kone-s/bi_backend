@@ -31,8 +31,8 @@ public class SparkAIServer {
     private WebSocketServer webSocketServer;
 
     // 设置重试，重试次数2次，重试间隔2s
-    private final Retryer<String> retryer = RetryerBuilder.<String>newBuilder()
-            .retryIfResult(result -> (!isValidResult(result)))
+    private final Retryer<HashMap<String, Object>> retryer = RetryerBuilder.<HashMap<String, Object>>newBuilder()
+            .retryIfResult(result -> (!isValidResult(result.get("chatResult").toString())))
             .withStopStrategy(StopStrategies.stopAfterAttempt(2))
             .withWaitStrategy(WaitStrategies.fixedWait(2, TimeUnit.SECONDS))
             .build();
@@ -72,11 +72,11 @@ public class SparkAIServer {
      * @return 调用AI
      * @throws Exception 重试失败
      */
-    public String sendMesToAItRetry(String userInput) throws Exception {
+    public HashMap<String, Object> sendMesToAItRetry(String userInput) throws Exception {
         try {
-            Callable<String> callable = () -> {
+            Callable<HashMap<String, Object>> callable = () -> {
                 // 在这里调用sendMesToAI方法
-                return sendMesToAI(userInput).get("chatResult").toString();
+                return sendMesToAI(userInput);
             };
             return retryer.call(callable);
         } catch (RetryException e) {

@@ -169,7 +169,7 @@ public class ChartController {
      */
     @PostMapping("/gen")
     public BaseResponse<BiResponseVO> genChartByAi(@RequestPart("file") MultipartFile multipartFile,
-                                                   GenChartByAiRequest genChartByAiRequest, HttpServletRequest request) {
+                                                   GenChartByAiRequest genChartByAiRequest, HttpServletRequest request) throws Exception {
         String chartName = genChartByAiRequest.getChartName();
         String goal = genChartByAiRequest.getGoal();
         String chartType = genChartByAiRequest.getChartType();
@@ -217,7 +217,7 @@ public class ChartController {
         }
         userInput.append(csvData).append("\n");
 
-        HashMap<String, Object> result = sparkAIServer.sendMesToAI(userInput.toString());
+        HashMap<String, Object> result = sparkAIServer.sendMesToAItRetry(userInput.toString());
         String chatResult = result.get("chatResult").toString();
 
         Integer totalTokensInteger = (Integer) result.get("totalTokens");
@@ -344,16 +344,15 @@ public class ChartController {
                 return;
             }
 
-            //String result;
-            //try {
-            //    // 执行重试逻辑
-            //    result = sparkAIServer.sendMesToAItRetry(userInput.toString());
-            //} catch (Exception e) {
-            //    // 如果重试过程中出现异常，返回错误信息
-            //    throw new CustomizeException(ErrorCode.SYSTEM_ERROR, e + "，AI生成错误");
-            //}
+            HashMap<String, Object> result;
+            try {
+                // 执行重试逻辑
+                result = sparkAIServer.sendMesToAItRetry(userInput.toString());
+            } catch (Exception e) {
+                // 如果重试过程中出现异常，返回错误信息
+                throw new CustomizeException(ErrorCode.SYSTEM_ERROR, e + "，AI生成错误");
+            }
 
-            HashMap<String, Object> result = sparkAIServer.sendMesToAI(userInput.toString());
             String chatResult = result.get("chatResult").toString();
             Integer totalTokensInteger = (Integer) result.get("totalTokens");
             long totalTokens = totalTokensInteger.longValue(); // 将 Integer 转换为 Long
