@@ -65,6 +65,12 @@ public class User implements Serializable {
     private Date updateTime;
 
     /**
+     * 消耗积分
+     */
+    @TableField(exist = false)
+    private Integer consumedScore;
+
+    /**
      * 是否删除
      */
     @TableLogic

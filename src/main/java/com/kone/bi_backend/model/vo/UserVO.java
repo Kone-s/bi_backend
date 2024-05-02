@@ -13,7 +13,7 @@ import lombok.Data;
 public class UserVO implements Serializable {
 
     /**
-     * id
+     * 用户 id
      */
     private Long id;
 
@@ -22,10 +22,36 @@ public class UserVO implements Serializable {
      */
     private String nickname;
 
+
+    /**
+     * 用户昵称
+     */
+    private String userEmail;
+
     /**
      * 用户头像
      */
     private String userAvatar;
+
+    /**
+     * 用户简介
+     */
+    private String userProfile;
+
+    /**
+     * 总积分
+     */
+    private Long scoreTotal;
+
+    /**
+     * 用户消耗tokens
+     */
+    private Long tokens;
+
+    /**
+     * 用户电话
+     */
+    private String userPhone;
 
     /**
      * 用户角色：user/admin/ban
@@ -36,6 +62,11 @@ public class UserVO implements Serializable {
      * 创建时间
      */
     private Date createTime;
+
+    /**
+     * 更新时间
+     */
+    private Date updateTime;
 
     @TableField(exist = false)
     private static final long serialVersionUID = 1L;

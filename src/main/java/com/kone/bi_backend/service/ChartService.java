@@ -1,7 +1,9 @@
 package com.kone.bi_backend.service;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.kone.bi_backend.model.dto.chart.ChartQueryRequest;
 import com.kone.bi_backend.model.entity.Chart;
 
 /**
@@ -26,5 +28,14 @@ public interface ChartService extends IService<Chart> {
      * @return
      */
     boolean isSameChart(Chart chart1, Chart chart2);
+
+
+    /**
+     * 获取查询条件
+     *
+     * @param chartQueryRequest
+     * @return
+     */
+    QueryWrapper<Chart> getQueryWrapper(ChartQueryRequest chartQueryRequest);
 
 }

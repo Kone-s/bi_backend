@@ -1,23 +1,31 @@
 package com.kone.bi_backend.controller;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.kone.bi_backend.common.constant.CommonConstant;
 import com.kone.bi_backend.common.exception.CustomizeException;
 import com.kone.bi_backend.common.utils.ThrowUtils;
 import com.kone.bi_backend.common.response.BaseResponse;
 import com.kone.bi_backend.common.response.ErrorCode;
 import com.kone.bi_backend.common.utils.ResultUtils;
 import com.kone.bi_backend.model.dto.user.*;
+import com.kone.bi_backend.model.entity.Score;
 import com.kone.bi_backend.model.entity.User;
 import com.kone.bi_backend.model.vo.LoginUserVO;
+import com.kone.bi_backend.model.vo.PageUser;
 import com.kone.bi_backend.service.AvatarService;
+import com.kone.bi_backend.service.ScoreService;
 import com.kone.bi_backend.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
+import org.springframework.util.DigestUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 用户接口
@@ -32,6 +40,9 @@ public class UserController {
 
     @Resource
     private AvatarService avatarService;
+
+    @Resource
+    private ScoreService scoreService;
 
     /**
      * 用户注册
@@ -208,5 +219,84 @@ public class UserController {
         boolean result = userService.updateById(user);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
         return ResultUtils.success(true);
+    }
+
+    /**
+     * 分页获取用户列表（仅管理员）
+     *
+     * @param userQueryRequest
+     * @return
+     */
+    @PostMapping("/list/page")
+    public BaseResponse<Page<User>> listUserByPage(@RequestBody UserQueryRequest userQueryRequest) {
+        long current = userQueryRequest.getCurrent();
+        long size = userQueryRequest.getPageSize();
+        Page<User> userPage = userService.page(new Page<>(current, size),
+                userService.getQueryWrapper(userQueryRequest));
+        return ResultUtils.success(userPage);
+    }
+
+    /**
+     * 删除用户
+     *
+     * @param deleteRequest
+     * @return
+     */
+    @PostMapping("/delete")
+    public BaseResponse<Boolean> deleteUser(@RequestBody DeleteRequest deleteRequest) {
+        if (deleteRequest == null || deleteRequest.getId() <= 0) {
+            throw new CustomizeException(ErrorCode.PARAMS_ERROR);
+        }
+        boolean b = userService.removeById(deleteRequest.getId());
+        return ResultUtils.success(b);
+    }
+
+    /**
+     * 更新用户
+     *
+     * @param userUpdateRequest
+     * @param request
+     * @return
+     */
+    @PostMapping("/update")
+    public BaseResponse<Boolean> updateUser(@RequestBody UserUpdateRequest userUpdateRequest, HttpServletRequest request) {
+        if (userUpdateRequest == null || userUpdateRequest.getId() == null) {
+            throw new CustomizeException(ErrorCode.PARAMS_ERROR);
+        }
+        String encryptPassword = DigestUtils.md5DigestAsHex((CommonConstant.SALT + userUpdateRequest.getUserPassword()).getBytes());
+        userUpdateRequest.setUserPassword(encryptPassword);
+        User user = new User();
+        BeanUtils.copyProperties(userUpdateRequest, user);
+        boolean result = userService.updateById(user);
+        ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
+        return ResultUtils.success(true);
+    }
+
+    /**
+     * 创建用户
+     *
+     * @param userUpdateRequest
+     * @return
+     */
+    @PostMapping("/add")
+    public BaseResponse<Long> addUser(@RequestBody UserUpdateRequest userUpdateRequest) {
+        if (userUpdateRequest == null) {
+            throw new CustomizeException(ErrorCode.PARAMS_ERROR);
+        }
+        String encryptPassword = DigestUtils.md5DigestAsHex((CommonConstant.SALT + userUpdateRequest.getUserPassword()).getBytes());
+        userUpdateRequest.setUserPassword(encryptPassword);
+        User user = new User();
+        BeanUtils.copyProperties(userUpdateRequest, user);
+        boolean result = userService.save(user);
+        //注册成功后往Score表插入数据
+        Score score = new Score();
+        //未签到
+        score.setIsSign(0);
+        score.setScoreTotal(10L);
+        score.setUserId(user.getId());
+        boolean scoreResult = scoreService.save(score);
+        ThrowUtils.throwIf(!scoreResult, ErrorCode.OPERATION_ERROR, "注册积分异常");
+        ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
+        return ResultUtils.success(user.getId());
     }
 }

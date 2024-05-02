@@ -3,6 +3,7 @@ package com.kone.bi_backend.controller;
 import cn.hutool.core.io.FileUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.kone.bi_backend.common.constant.UserConstant;
 import com.kone.bi_backend.common.server.RedisCacheServer;
 import com.kone.bi_backend.common.server.RedisLimiterServer;
 import com.kone.bi_backend.common.server.SparkAIServer;
@@ -500,6 +501,21 @@ public class ChartController {
         BiResponseVO biResponseVO = new BiResponseVO();
         biResponseVO.setChartId(chartId);
         return ResultUtils.success(biResponseVO);
+    }
+
+
+    /**
+     * 分页获取图标信息列表（仅管理员）
+     *
+     * @param chartQueryRequest
+     * @return
+     */
+    @PostMapping("/list/page")
+    public BaseResponse<Page<Chart>> listChartByPage(@RequestBody ChartQueryRequest chartQueryRequest) {
+        long current = chartQueryRequest.getCurrent();
+        long size = chartQueryRequest.getPageSize();
+        Page<Chart> chartPage = chartService.page(new Page<>(current, size), chartService.getQueryWrapper(chartQueryRequest));
+        return ResultUtils.success(chartPage);
     }
 
 

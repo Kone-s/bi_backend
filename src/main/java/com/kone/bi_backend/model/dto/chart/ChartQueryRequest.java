@@ -27,6 +27,11 @@ public class ChartQueryRequest extends PageRequest implements Serializable {
     private String sortField;
 
     /**
+     * 分析目标
+     */
+    private String goal;
+
+    /**
      * 图表类型
      */
     private String chartType;

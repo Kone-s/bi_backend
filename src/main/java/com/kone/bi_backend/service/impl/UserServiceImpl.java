@@ -315,6 +315,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
         Long id = userQueryRequest.getId();
         String nickname = userQueryRequest.getNickname();
+        String userEmail = userQueryRequest.getUserEmail();
         String userRole = userQueryRequest.getUserRole();
         String sortField = userQueryRequest.getSortField();
         String sortOrder = userQueryRequest.getSortOrder();
@@ -322,6 +323,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         queryWrapper.eq(id != null, "id", id);
         queryWrapper.eq(StringUtils.isNotBlank(userRole), "user_role", userRole);
         queryWrapper.like(StringUtils.isNotBlank(nickname), "nickname", nickname);
+        queryWrapper.like(StringUtils.isNotBlank(userEmail), "user_email", userEmail);
         queryWrapper.orderBy(SqlUtils.validSortField(sortField), sortOrder.equals(CommonConstant.SORT_ORDER_ASC), sortField);
         return queryWrapper;
     }
