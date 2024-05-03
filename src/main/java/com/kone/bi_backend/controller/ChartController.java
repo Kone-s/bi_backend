@@ -108,8 +108,7 @@ public class ChartController {
      */
     @PostMapping("/update/gen")
     public BaseResponse<Boolean> updateGenChart(@RequestBody ChartUpdateRequest chartUpdateRequest, HttpServletRequest request) {
-        if (chartUpdateRequest == null || chartUpdateRequest.getId() == null
-                || chartUpdateRequest.getId() <= 0) {
+        if (chartUpdateRequest == null || chartUpdateRequest.getId() == null || chartUpdateRequest.getId() <= 0) {
             throw new CustomizeException(ErrorCode.PARAMS_ERROR);
         }
         Chart chart = new Chart();
@@ -128,8 +127,7 @@ public class ChartController {
      * @return 成功信息
      */
     @PostMapping("/my/list/page")
-    public BaseResponse<Page<Chart>> listMyChartByPage(@RequestBody ChartQueryRequest chartQueryRequest,
-                                                       HttpServletRequest request) {
+    public BaseResponse<Page<Chart>> listMyChartByPage(@RequestBody ChartQueryRequest chartQueryRequest, HttpServletRequest request) {
         if (chartQueryRequest == null) {
             throw new CustomizeException(ErrorCode.PARAMS_ERROR);
         }
@@ -139,20 +137,15 @@ public class ChartController {
         long size = chartQueryRequest.getPageSize();
         // 限制爬虫
         ThrowUtils.throwIf(size > 20, ErrorCode.PARAMS_ERROR);
-        String cacheKey = "ChartController_listMyChartVOByPage_" + chartQueryRequest.getId() + "_" + chartQueryRequest.getChartType() + "_" + chartQueryRequest.getChartName();
+        String cacheKey = "ChartController_listMyChartVOByPage_" + chartQueryRequest.getCurrent() + "_" + chartQueryRequest.getChartType() + "_" + chartQueryRequest.getChartName();
         Page<Chart> cachedChartPage = redisCacheServer.getCachedResult(cacheKey);
+        // 判断是否缓存命中
         if (cachedChartPage != null) {
-            // 缓存命中，比较缓存数据与数据库数据是否一致
-            Page<Chart> databaseChartPage = chartService.page(new Page<>(current, size),
-                    getQueryWrapper(chartQueryRequest));
-            if (!chartService.isSamePage(cachedChartPage, databaseChartPage)) {
-                redisCacheServer.putCachedResult(cacheKey, databaseChartPage);
-            }
+            // 缓存命中
             return ResultUtils.success(cachedChartPage);
         } else {
             // 缓存未命中，从数据库中查询数据，并放入缓存
-            Page<Chart> chartPage = chartService.page(new Page<>(current, size),
-                    getQueryWrapper(chartQueryRequest));
+            Page<Chart> chartPage = chartService.page(new Page<>(current, size), getQueryWrapper(chartQueryRequest));
             redisCacheServer.asyncPutCachedResult(cacheKey, chartPage);
             return ResultUtils.success(chartPage);
         }
@@ -168,8 +161,7 @@ public class ChartController {
      * @return 图表的信息
      */
     @PostMapping("/gen")
-    public BaseResponse<BiResponseVO> genChartByAi(@RequestPart("file") MultipartFile multipartFile,
-                                                   GenChartByAiRequest genChartByAiRequest, HttpServletRequest request) throws Exception {
+    public BaseResponse<BiResponseVO> genChartByAi(@RequestPart("file") MultipartFile multipartFile, GenChartByAiRequest genChartByAiRequest, HttpServletRequest request) throws Exception {
         String chartName = genChartByAiRequest.getChartName();
         String goal = genChartByAiRequest.getGoal();
         String chartType = genChartByAiRequest.getChartType();
@@ -272,8 +264,7 @@ public class ChartController {
      * @return 图表的信息
      */
     @PostMapping("/gen/async")
-    public BaseResponse<BiResponseVO> genChartByAiAsync(@RequestPart("file") MultipartFile multipartFile,
-                                                        GenChartByAiRequest genChartByAiRequest, HttpServletRequest request) {
+    public BaseResponse<BiResponseVO> genChartByAiAsync(@RequestPart("file") MultipartFile multipartFile, GenChartByAiRequest genChartByAiRequest, HttpServletRequest request) {
         String chartName = genChartByAiRequest.getChartName();
         String goal = genChartByAiRequest.getGoal();
         String chartType = genChartByAiRequest.getChartType();
@@ -541,8 +532,7 @@ public class ChartController {
         queryWrapper.eq(StringUtils.isNotBlank(chartType), "chart_type", chartType);
         queryWrapper.eq(ObjectUtils.isNotEmpty(userId), "user_id", userId);
         queryWrapper.eq("is_delete", false);
-        queryWrapper.orderBy(SqlUtils.validSortField(sortField), sortOrder.equals(CommonConstant.SORT_ORDER_ASC),
-                sortField);
+        queryWrapper.orderBy(SqlUtils.validSortField(sortField), sortOrder.equals(CommonConstant.SORT_ORDER_ASC), sortField);
         return queryWrapper;
     }
 }

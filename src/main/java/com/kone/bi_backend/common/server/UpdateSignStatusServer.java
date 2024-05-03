@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 
 /**
- * 更新用户签到状态服务
+ * 更新用户签到状态
  */
 @Component
 public class UpdateSignStatusServer {
@@ -23,7 +23,7 @@ public class UpdateSignStatusServer {
      * 每天12点更新
      */
     @Scheduled(cron = "0 0 0 * * ?")
-    public void sendMessageToClient() {
+    public void updateSignStatus() {
         UpdateWrapper<Score> updateWrapper = new UpdateWrapper<>();
         //更新Score表中isSign为1的数据
         updateWrapper.set("is_sign", 0)

@@ -20,25 +20,16 @@ public class RedisCacheServer {
 
     public Page<Chart> getCachedResult(String cacheKey) {
         // 从缓存中获取数据
-        RMap<String, Object> cache = redissonClient.getMap(cacheKey);
-        Object cachedValue = cache.get(cacheKey);
-
-        if (cachedValue instanceof Page) {
-            // 进行类型转换，但是只有在对象确实是 Page 类型时
-            @SuppressWarnings("unchecked")
-            Page<Chart> page = (Page<Chart>) cachedValue;
-            return page;
-        } else {
-            return null;
-        }
+        RMap<String, Page<Chart>> cache = redissonClient.getMap(cacheKey);
+        return cache.get(cacheKey);
     }
 
     public void putCachedResult(String cacheKey, Page<Chart> chartPage) {
         // 放入缓存
-        RMap<String, Object> cache = redissonClient.getMap(cacheKey);
+        RMap<String, Page<Chart>> cache = redissonClient.getMap(cacheKey);
         cache.put(cacheKey, chartPage);
-        // 设置缓存过期时间为60秒
-        cache.expire(Duration.ofSeconds(60));
+        // 设置缓存过期时间为180秒
+        cache.expire(Duration.ofSeconds(180));
     }
 
     @Async

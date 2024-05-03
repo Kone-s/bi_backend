@@ -1,22 +1,28 @@
-package com.kone.bi_backend.common.server;
+package com.kone.bi_backend.service.impl;
 
 import com.kone.bi_backend.common.exception.CustomizeException;
 import com.kone.bi_backend.common.response.ErrorCode;
-import org.springframework.mail.javamail.JavaMailSender;
+import com.kone.bi_backend.service.EmailService;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
 import javax.annotation.Resource;
-import java.util.Arrays;
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
+import java.util.Arrays;
 
-@Component
-public class EmailServer {
-
+/**
+ * 邮箱服务
+ *
+ * @Author Kone
+ * @Date 2024/5/3
+ */
+@Service
+public class EmailServiceImpl implements EmailService {
     @Resource
     private JavaMailSender mailSender;
 
@@ -37,6 +43,7 @@ public class EmailServer {
      * @param userEmail 用户邮箱
      * @param captcha   随机验证码
      */
+    @Override
     public void sendRegisterEmailCaptcha(String userEmail, String captcha) {
         Context context = new Context();
         context.setVariable("verifyCode", Arrays.asList(captcha.split("")));
@@ -61,6 +68,7 @@ public class EmailServer {
      * @param userEmail 用户邮箱
      * @param captcha   随机验证码
      */
+    @Override
     public void sendForgetEmailCaptcha(String userEmail, String captcha) {
         Context context = new Context();
         context.setVariable("verifyCode", Arrays.asList(captcha.split("")));

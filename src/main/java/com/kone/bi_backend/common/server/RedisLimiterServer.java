@@ -22,7 +22,7 @@ public class RedisLimiterServer {
     /**
      * 限流操作
      *
-     * @param key 区分不同的限流器，比如不同的用户 id 应该分别统计
+     * @param key 区分不同的限流器，通过不同的用户 id 分别统计
      */
     public void doRateLimit(String key) {
         // 创建一个限流器

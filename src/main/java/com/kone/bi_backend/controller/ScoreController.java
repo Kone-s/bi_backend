@@ -4,7 +4,6 @@ import com.kone.bi_backend.common.utils.ResultUtils;
 import com.kone.bi_backend.model.entity.User;
 import com.kone.bi_backend.service.ScoreService;
 import com.kone.bi_backend.service.UserService;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -19,7 +18,6 @@ import javax.servlet.http.HttpServletRequest;
  */
 @RestController
 @RequestMapping("/score")
-@Slf4j
 public class ScoreController {
     @Resource
     private UserService userService;

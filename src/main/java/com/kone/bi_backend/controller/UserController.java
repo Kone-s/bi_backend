@@ -11,11 +11,9 @@ import com.kone.bi_backend.model.dto.user.*;
 import com.kone.bi_backend.model.entity.Score;
 import com.kone.bi_backend.model.entity.User;
 import com.kone.bi_backend.model.vo.LoginUserVO;
-import com.kone.bi_backend.model.vo.PageUser;
 import com.kone.bi_backend.service.AvatarService;
 import com.kone.bi_backend.service.ScoreService;
 import com.kone.bi_backend.service.UserService;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.util.DigestUtils;
@@ -24,15 +22,12 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * 用户接口
  */
 @RestController
 @RequestMapping("/user")
-@Slf4j
 public class UserController {
 
     @Resource
@@ -104,31 +99,6 @@ public class UserController {
         return ResultUtils.success(result);
     }
 
-    /**
-     * 邮箱注册验证码接口
-     *
-     * @param userCaptchaRequest
-     * @return
-     */
-    @PostMapping("/register/captcha")
-    public BaseResponse<Boolean> sendRegisterCaptcha(@RequestBody UserCaptchaRequest userCaptchaRequest) {
-        String userEmail = userCaptchaRequest.getUserEmail();
-        boolean result = userService.sendRegisterCaptcha(userEmail);
-        return ResultUtils.success(result);
-    }
-
-    /**
-     * 忘记密码验证码接口
-     *
-     * @param userCaptchaRequest
-     * @return
-     */
-    @PostMapping("/forget/captcha")
-    public BaseResponse<Boolean> sendForgetCaptcha(@RequestBody UserCaptchaRequest userCaptchaRequest) {
-        String userEmail = userCaptchaRequest.getUserEmail();
-        boolean result = userService.sendForgetCaptcha(userEmail);
-        return ResultUtils.success(result);
-    }
 
     /**
      * 用户登录

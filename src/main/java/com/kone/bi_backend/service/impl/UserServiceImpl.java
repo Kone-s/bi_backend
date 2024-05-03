@@ -11,7 +11,6 @@ import com.kone.bi_backend.common.constant.CommonConstant;
 import com.kone.bi_backend.common.utils.ThrowUtils;
 import com.kone.bi_backend.common.response.ErrorCode;
 import com.kone.bi_backend.common.exception.CustomizeException;
-import com.kone.bi_backend.common.server.EmailServer;
 import com.kone.bi_backend.common.utils.CaptchaGenerateUtil;
 import com.kone.bi_backend.common.utils.SqlUtils;
 import com.kone.bi_backend.mapper.UserMapper;
@@ -20,6 +19,7 @@ import com.kone.bi_backend.model.entity.Score;
 import com.kone.bi_backend.model.entity.User;
 import com.kone.bi_backend.model.vo.LoginUserVO;
 import com.kone.bi_backend.model.vo.UserVO;
+import com.kone.bi_backend.service.EmailService;
 import com.kone.bi_backend.service.ScoreService;
 import com.kone.bi_backend.service.UserService;
 import org.apache.commons.lang3.StringUtils;
@@ -48,7 +48,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     private ScoreService scoreService;
 
     @Resource
-    private EmailServer emailServer;
+    private EmailService emailService;
 
     @Resource
     private RedisTemplate<String, String> redisTemplate;
@@ -196,9 +196,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         Object userObj = request.getSession().getAttribute(USER_LOGIN_STATE);
         User currentUser = (User) userObj;
         if (currentUser == null || currentUser.getId() == null) {
-            throw new CustomizeException(ErrorCode.NOT_LOGIN_ERROR);
+            return null;
         }
-        // 从数据库查询（追求性能的话可以注释，直接走缓存）
+        // 从数据库查询
         long userId = currentUser.getId();
         currentUser = this.getById(userId);
         if (currentUser == null) {
@@ -244,11 +244,16 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     public boolean sendRegisterCaptcha(String userEmail) {
+        Pattern pattern = Pattern.compile("^[a-zA-Z0-9_.-]+@[a-zA-Z0-9-]+(\\.[a-zA-Z0-9-]+)*\\.[a-zA-Z0-9]{2,6}$");
+        Matcher matcher = pattern.matcher(userEmail);
+        if (!matcher.find()) {
+            throw new CustomizeException(ErrorCode.PARAMS_ERROR, "邮箱格式错误");
+        }
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("user_email", userEmail);
         long count = this.baseMapper.selectCount(queryWrapper);
         if (count > 0) {
-            throw new CustomizeException(ErrorCode.PARAMS_ERROR, "邮箱已被注册");
+            throw new CustomizeException(ErrorCode.PARAMS_ERROR, "已注册，如忘记密码请找回！");
         }
         String captcha = CaptchaGenerateUtil.generateVerCode();
         try {
@@ -260,12 +265,17 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             throw new CustomizeException(ErrorCode.SYSTEM_ERROR, "缓存失败");
         }
         //发送验证码
-        emailServer.sendRegisterEmailCaptcha(userEmail, captcha);
+        emailService.sendRegisterEmailCaptcha(userEmail, captcha);
         return true;
     }
 
     @Override
     public boolean sendForgetCaptcha(String userEmail) {
+        Pattern pattern = Pattern.compile("^[a-zA-Z0-9_.-]+@[a-zA-Z0-9-]+(\\.[a-zA-Z0-9-]+)*\\.[a-zA-Z0-9]{2,6}$");
+        Matcher matcher = pattern.matcher(userEmail);
+        if (!matcher.find()) {
+            throw new CustomizeException(ErrorCode.PARAMS_ERROR, "邮箱格式错误");
+        }
         String captcha = CaptchaGenerateUtil.generateVerCode();
         try {
             long timeOut = 1000 * 60 * 5;
@@ -276,7 +286,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             throw new CustomizeException(ErrorCode.SYSTEM_ERROR, "缓存失败");
         }
         //发送验证码
-        emailServer.sendForgetEmailCaptcha(userEmail, captcha);
+        emailService.sendForgetEmailCaptcha(userEmail, captcha);
         return true;
     }
 
