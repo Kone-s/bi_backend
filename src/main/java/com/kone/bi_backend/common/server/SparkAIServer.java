@@ -80,8 +80,7 @@ public class SparkAIServer {
             };
             return retryer.call(callable);
         } catch (RetryException e) {
-            webSocketServer.sendToAllClient("分析好像出了点问题，正在重试");
-            throw new CustomizeException(ErrorCode.SYSTEM_ERROR, e + "，AI生成错误");
+            throw new CustomizeException(ErrorCode.SYSTEM_ERROR, e + "，AI生成错误,正在重试");
         }
     }
 

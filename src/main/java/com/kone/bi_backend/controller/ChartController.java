@@ -3,21 +3,22 @@ package com.kone.bi_backend.controller;
 import cn.hutool.core.io.FileUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.kone.bi_backend.common.constant.UserConstant;
+import com.kone.bi_backend.common.constant.CommonConstant;
+import com.kone.bi_backend.common.exception.CustomizeException;
+import com.kone.bi_backend.common.response.BaseResponse;
+import com.kone.bi_backend.common.response.ErrorCode;
 import com.kone.bi_backend.common.server.RedisCacheServer;
 import com.kone.bi_backend.common.server.RedisLimiterServer;
 import com.kone.bi_backend.common.server.SparkAIServer;
 import com.kone.bi_backend.common.server.WebSocketServer;
 import com.kone.bi_backend.common.utils.ExcelUtils;
-import com.kone.bi_backend.common.exception.CustomizeException;
-import com.kone.bi_backend.common.constant.CommonConstant;
-import com.kone.bi_backend.common.utils.ThrowUtils;
-import com.kone.bi_backend.model.dto.chart.ChartDeleteRequest;
-import com.kone.bi_backend.common.response.BaseResponse;
-import com.kone.bi_backend.common.response.ErrorCode;
 import com.kone.bi_backend.common.utils.ResultUtils;
 import com.kone.bi_backend.common.utils.SqlUtils;
-import com.kone.bi_backend.model.dto.chart.*;
+import com.kone.bi_backend.common.utils.ThrowUtils;
+import com.kone.bi_backend.model.dto.chart.ChartDeleteRequest;
+import com.kone.bi_backend.model.dto.chart.ChartQueryRequest;
+import com.kone.bi_backend.model.dto.chart.ChartUpdateRequest;
+import com.kone.bi_backend.model.dto.chart.GenChartByAiRequest;
 import com.kone.bi_backend.model.entity.Chart;
 import com.kone.bi_backend.model.entity.User;
 import com.kone.bi_backend.model.vo.BiResponseVO;
@@ -31,13 +32,13 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
-import java.util.HashMap;
-import java.util.Objects;
-import java.util.concurrent.ThreadPoolExecutor;
 import javax.servlet.http.HttpServletRequest;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -351,7 +352,8 @@ public class ChartController {
             scoreService.deductScore(loginUser.getId(), 1L);
             scoreService.depleteTokens(loginUser.getId(), totalTokens);
 
-            webSocketServer.sendToAllClient("图表生成好啦，快去看看吧！");
+            String userId = String.valueOf(loginUser.getId());
+            webSocketServer.sendToClient(userId, "图表生成好啦，快去看看吧！");
             // 匹配{}内的内容
             Pattern pattern = Pattern.compile("\\{(.*)}", Pattern.DOTALL);
             Matcher matcher = pattern.matcher(chatResult);
@@ -456,7 +458,8 @@ public class ChartController {
             scoreService.deductScore(loginUser.getId(), 1L);
             scoreService.depleteTokens(loginUser.getId(), totalTokens);
 
-            webSocketServer.sendToAllClient("图表生成好啦，快去看看吧！");
+            String userId = String.valueOf(loginUser.getId());
+            webSocketServer.sendToClient(userId, "图表生成好啦，快去看看吧！");
             // 匹配{}内的内容
             Pattern pattern = Pattern.compile("\\{(.*)}", Pattern.DOTALL);
             Matcher matcher = pattern.matcher(chatResult);

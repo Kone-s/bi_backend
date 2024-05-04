@@ -22,7 +22,7 @@ public class ThreadPoolConfig {
             @Override
             public Thread newThread(@NotNull Runnable r) {
                 Thread thread = new Thread(r);
-                thread.setName("线程" + count);
+                thread.setName("Thread" + count);
                 count++;
                 return thread;
             }
@@ -32,7 +32,7 @@ public class ThreadPoolConfig {
                 4,
                 100,
                 TimeUnit.SECONDS,
-                new ArrayBlockingQueue<>(100),
+                new ArrayBlockingQueue<>(1000),
                 threadFactory);
     }
 }

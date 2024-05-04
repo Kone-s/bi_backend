@@ -16,7 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * websocket服务
  */
 @Component
-@ServerEndpoint("/websocket/{sid}")
+@ServerEndpoint("/websocket/{userId}")
 public class WebSocketServer {
 
     //存放会话对象
@@ -26,32 +26,34 @@ public class WebSocketServer {
      * 连接建立成功调用的方法
      *
      * @param session 会话
-     * @param sid     会话id
+     * @param userId  会话id
      */
     @OnOpen
-    public void onOpen(Session session, @PathParam("sid") String sid) {
-        sessionMap.put(sid, session);
+    public void onOpen(Session session, @PathParam("userId") String userId) {
+        sessionMap.put(userId, session);
+        System.out.println("连接对话" + userId);
     }
 
     /**
      * 收到客户端消息后调用的方法
      *
      * @param message 客户端发送过来的消息
-     * @param sid     会话id
+     * @param userId  会话id
      */
     @OnMessage
-    public void onMessage(String message, @PathParam("sid") String sid) {
+    public void onMessage(String message, @PathParam("userId") String userId) {
     }
 
     /**
      * 连接关闭调用的方法
      *
      * @param session 客户端发送过来的消息
-     * @param sid     会话id
+     * @param userId  会话id
      */
     @OnClose
-    public void onClose(Session session, @PathParam("sid") String sid) {
-        sessionMap.remove(sid, session);
+    public void onClose(Session session, @PathParam("userId") String userId) {
+        sessionMap.remove(userId, session);
+        System.out.println("关闭对话" + userId);
     }
 
 
@@ -60,14 +62,11 @@ public class WebSocketServer {
      *
      * @param message 消息
      */
-    public void sendToAllClient(String message) {
+    public void sendToClient(String userId, String message) {
         Collection<Session> sessions = sessionMap.values();
         for (Session session : sessions) {
-            try {
-                //服务器向客户端发送消息
-                session.getBasicRemote().sendText(message);
-            } catch (Exception e) {
-                e.printStackTrace();
+            if (session.getId().equals(userId)) {
+                session.getAsyncRemote().sendText(message);
             }
         }
     }
