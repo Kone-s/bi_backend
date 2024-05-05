@@ -1,18 +1,17 @@
 package com.kone.bi_backend.service.impl;
 
 
-import static com.kone.bi_backend.common.constant.UserConstant.USER_LOGIN_STATE;
-
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.kone.bi_backend.common.constant.CommonConstant;
-import com.kone.bi_backend.common.utils.ThrowUtils;
-import com.kone.bi_backend.common.response.ErrorCode;
+import com.kone.bi_backend.common.constant.UserRoleEnum;
 import com.kone.bi_backend.common.exception.CustomizeException;
+import com.kone.bi_backend.common.response.ErrorCode;
 import com.kone.bi_backend.common.utils.CaptchaGenerateUtil;
 import com.kone.bi_backend.common.utils.SqlUtils;
+import com.kone.bi_backend.common.utils.ThrowUtils;
 import com.kone.bi_backend.mapper.UserMapper;
 import com.kone.bi_backend.model.dto.user.UserQueryRequest;
 import com.kone.bi_backend.model.entity.Score;
@@ -37,6 +36,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import static com.kone.bi_backend.common.constant.UserConstant.USER_LOGIN_STATE;
 
 /**
  * 用户服务实现
@@ -308,6 +309,25 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         UserVO userVO = new UserVO();
         BeanUtils.copyProperties(user, userVO);
         return userVO;
+    }
+
+    /**
+     * 是否为管理员
+     *
+     * @param request
+     * @return
+     */
+    @Override
+    public boolean isAdmin(HttpServletRequest request) {
+        // 仅管理员可查询
+        Object userObj = request.getSession().getAttribute(USER_LOGIN_STATE);
+        User user = (User) userObj;
+        return isAdmin(user);
+    }
+
+    @Override
+    public boolean isAdmin(User user) {
+        return user != null && UserRoleEnum.ADMIN.getValue().equals(user.getUserRole());
     }
 
     @Override

@@ -103,6 +103,11 @@ public interface UserService extends IService<User> {
      */
     UserVO getUserVO(User user);
 
+
+    boolean isAdmin(HttpServletRequest request);
+
+    boolean isAdmin(User user);
+
     /**
      * 获取脱敏的用户信息
      *

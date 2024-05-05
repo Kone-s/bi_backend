@@ -28,8 +28,8 @@ public class RedisCacheServer {
         // 放入缓存
         RMap<String, Page<Chart>> cache = redissonClient.getMap(cacheKey);
         cache.put(cacheKey, chartPage);
-        // 设置缓存过期时间为180秒
-        cache.expire(Duration.ofSeconds(180));
+        // 设置缓存过期时间为60秒
+        cache.expire(Duration.ofSeconds(60));
     }
 
     @Async

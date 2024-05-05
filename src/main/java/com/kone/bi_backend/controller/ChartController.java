@@ -3,6 +3,8 @@ package com.kone.bi_backend.controller;
 import cn.hutool.core.io.FileUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.kone.bi_backend.common.constant.CommonConstant;
 import com.kone.bi_backend.common.exception.CustomizeException;
 import com.kone.bi_backend.common.response.BaseResponse;
@@ -93,7 +95,7 @@ public class ChartController {
         Chart oldChart = chartService.getById(id);
         ThrowUtils.throwIf(oldChart == null, ErrorCode.NOT_FOUND_ERROR);
         // 仅本人可删除
-        if (!oldChart.getUserId().equals(user.getId())) {
+        if (!oldChart.getUserId().equals(user.getId()) && !userService.isAdmin(user)) {
             throw new CustomizeException(ErrorCode.NO_AUTH_ERROR);
         }
         boolean b = chartService.removeById(id);
@@ -229,6 +231,13 @@ public class ChartController {
         } else {
             throw new CustomizeException(ErrorCode.SYSTEM_ERROR, "AI 生成错误");
         }
+
+        JsonObject jsonObject = JsonParser.parseString(genChart).getAsJsonObject();
+        // 删除标题属性
+        jsonObject.remove("title");
+        // 将JsonObject转换回字符串
+        genChart = jsonObject.toString();
+
         // 匹配结论后面的内容
         pattern = Pattern.compile("结论：(.*)");
         matcher = pattern.matcher(chatResult);
@@ -365,6 +374,13 @@ public class ChartController {
                 handleChartUpdateError(chart.getId(), "AI 生成错误");
                 return;
             }
+
+            JsonObject jsonObject = JsonParser.parseString(genChart).getAsJsonObject();
+            // 删除标题属性
+            jsonObject.remove("title");
+            // 将JsonObject转换回字符串
+            genChart = jsonObject.toString();
+
             // 匹配结论后面的内容
             pattern = Pattern.compile("结论：(.*)");
             matcher = pattern.matcher(chatResult);
@@ -471,6 +487,13 @@ public class ChartController {
                 handleChartUpdateError(chartId, "AI 生成错误");
                 return;
             }
+
+            JsonObject jsonObject = JsonParser.parseString(genChart).getAsJsonObject();
+            // 删除标题属性
+            jsonObject.remove("title");
+            // 将JsonObject转换回字符串
+            genChart = jsonObject.toString();
+
             // 匹配结论后面的内容
             pattern = Pattern.compile("结论：(.*)");
             matcher = pattern.matcher(chatResult);

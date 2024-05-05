@@ -8,7 +8,7 @@ import javax.websocket.OnOpen;
 import javax.websocket.Session;
 import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
-import java.util.Collection;
+import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -31,7 +31,6 @@ public class WebSocketServer {
     @OnOpen
     public void onOpen(Session session, @PathParam("userId") String userId) {
         sessionMap.put(userId, session);
-        System.out.println("连接对话" + userId);
     }
 
     /**
@@ -53,7 +52,6 @@ public class WebSocketServer {
     @OnClose
     public void onClose(Session session, @PathParam("userId") String userId) {
         sessionMap.remove(userId, session);
-        System.out.println("关闭对话" + userId);
     }
 
 
@@ -63,10 +61,12 @@ public class WebSocketServer {
      * @param message 消息
      */
     public void sendToClient(String userId, String message) {
-        Collection<Session> sessions = sessionMap.values();
-        for (Session session : sessions) {
-            if (session.getId().equals(userId)) {
-                session.getAsyncRemote().sendText(message);
+        Session session = sessionMap.get(userId);
+        if (session != null && session.isOpen()) {
+            try {
+                session.getBasicRemote().sendText(message);
+            } catch (IOException e) {
+                e.printStackTrace();
             }
         }
     }
